@@ -17,50 +17,40 @@ void interuptTest();
 int RTC;
 int checker = 0;
 int main()
-{
-	int rtcSetup;
-	unsigned char interval = 0b0000001;//1s default
+{	
+	unsigned char alarmTrigger = 0b0000001;//This will set off alarm when seconds regester = this value
+	
 	wiringPiSetup();
-	pinMode(RTCAlarm, INPUT);
+	pinMode(RTCAlarm, INPUT);				//setup pin for alarm interupt
 	RTC = wiringPiI2CSetup(RTCAddr);
-
+	
+	//random default values for RTC
 	wiringPiI2CWriteReg8(RTC, HOUR, 0x13);
     wiringPiI2CWriteReg8(RTC, MIN, 0x54);
     wiringPiI2CWriteReg8(RTC, SEC, 0x00);
     wiringPiI2CWriteReg8(RTC, SEC, 0b10000000);
 
+	//setup for the alarm
 	rtcSetup =wiringPiI2CReadReg8(RTC, 0x0D);
 	rtcSetup &= 0b10000111;
 	rtcSetup |= 0b10000000;
 	wiringPiI2CWriteReg8(RTC, 0x0D, rtcSetup);
-	wiringPiI2CWriteReg8(RTC, 0x0A, interval);
+	wiringPiI2CWriteReg8(RTC, 0x0A, alarmTrigger);
 	rtcSetup = wiringPiI2CReadReg8(RTC, 0x07);
 	rtcSetup |= 0b00010000;
 	rtcSetup &= 0b10011111;
 	wiringPiI2CWriteReg8(RTC, 0x07, rtcSetup);
-	//This will probably have a lot of issues
 	wiringPiISR (RTCAlarm, INT_EDGE_FALLING, interuptTest);
 	
-	while(1)
-	{
-		checker = wiringPiI2CReadReg8(RTC, 0x0D);
-		checker &= 0b00001000;
-		if(checker){printf("Interupt Flag: %d\n",checker);
-		rtcSetup = wiringPiI2CReadReg8(RTC, 0x0D);
-    	rtcSetup &= 0b11110111;
-    	wiringPiI2CWriteReg8(RTC, 0x0D, rtcSetup);}
-	}
+	while(1){}
 }
 	
 void interuptTest()
 {
-	int checker;
 	printf("Eh Victory!");
-	int rtcSetup = wiringPiI2CReadReg8(RTC, 0x0D);
-	rtcSetup &= 0b11110111;
-	wiringPiI2CWriteReg8(RTC, 0x0D, rtcSetup);
-	checker = wiringPiI2CReadReg8(RTC, 0x00);
-	checker +=2;
-	wiringPiI2CWriteReg8(RTC, 0x0A, checker);
+	
+	int reset = wiringPiI2CReadReg8(RTC, 0x0D);	//reset alarm flag
+	reset &= 0b11110111;					
+	wiringPiI2CWriteReg8(RTC, 0x0D, reset);
 }
 	
